@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Investigate an offer — OfferShield{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Investigation dashboard</p>
+    <h1>What are you checking?</h1>
+    <p class="section-lede">Choose one input. OfferShield runs independent checks and builds a transparent evidence report. Missing data is shown as unknown — never as fraud.</p>
+  </div>
+</section>
+
+<section class="section section-tight">
+  <div class="container">
+    <div class="workspace" id="workspace">
+      <div class="tab-bar" role="tablist" aria-label="Investigation type">
+        <button class="tab is-active" type="button" role="tab" id="tab-text" aria-selected="true" aria-controls="panel-text" data-tab="text">
+          <span class="tab-icon">Aa</span> Paste message
+        </button>
+        <button class="tab" type="button" role="tab" id="tab-pdf" aria-selected="false" aria-controls="panel-pdf" data-tab="pdf">
+          <span class="tab-icon">PDF</span> Upload offer letter
+        </button>
+        <button class="tab" type="button" role="tab" id="tab-url" aria-selected="false" aria-controls="panel-url" data-tab="url">
+          <span class="tab-icon">URL</span> Check website
+        </button>
+      </div>
+
+      <div class="tab-panel is-active" id="panel-text" role="tabpanel" aria-labelledby="tab-text">
+        <form id="form-text" class="scan-form" novalidate>
+          <div class="form-head">
+            <div>
+              <h2>Paste the job message</h2>
+              <p>WhatsApp, Telegram, email, SMS, internship offer or advertisement. Keep the full text including links and contact details.</p>
+            </div>
+            <div class="example-actions">
+              <button class="btn btn-tiny btn-ghost" type="button" data-example="scam">Load scam example</button>
+              <button class="btn btn-tiny btn-ghost" type="button" data-example="legit">Load interview example</button>
+            </div>
+          </div>
+          <label class="sr-only" for="scan-text">Job offer text</label>
+          <textarea id="scan-text" name="text" class="textarea" rows="10" maxlength="50000" placeholder="Paste the complete message here. Example: 'Congratulations… pay ₹2,000 for training kit… contact hr@gmail.com…'" required></textarea>
+          <div class="field-meta">
+            <span id="char-count">0 characters</span>
+            <span>Maximum 50,000 characters</span>
+          </div>
+          <div class="consent-row">
+            <label class="check">
+              <input type="checkbox" id="consent-text" name="consent">
+              <span class="check-box" aria-hidden="true"></span>
+              <span class="check-label">
+                Allow an optional AI explanation.
+                <small>A redacted excerpt and derived findings may be sent to the configured AI provider. This does not affect the risk score.</small>
+              </span>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" data-submit>
+              <span class="btn-label">Investigate message</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+            <span class="form-hint">Typical scan: 1–5 seconds without network checks.</span>
+          </div>
+          <div class="form-error" id="error-text" role="alert" hidden></div>
+        </form>
+      </div>
+
+      <div class="tab-panel" id="panel-pdf" role="tabpanel" aria-labelledby="tab-pdf" hidden>
+        <form id="form-pdf" class="scan-form" novalidate>
+          <div class="form-head">
+            <div>
+              <h2>Upload a PDF offer letter</h2>
+              <p>Text-based PDFs are parsed directly. Scanned PDFs use OCR only if Tesseract is available; otherwise the report clearly states the document could not be read.</p>
+            </div>
+          </div>
+          <label class="dropzone" for="pdf-file" id="dropzone">
+            <input type="file" id="pdf-file" name="file" accept="application/pdf,.pdf" hidden>
+            <span class="drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 16v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="drop-title">Drop your PDF here or browse</span>
+            <span class="drop-note">PDF only · maximum {{ max_upload_mb }} MB · processed in memory, never executed</span>
+            <span class="file-chip" id="file-chip" hidden></span>
+          </label>
+          <div class="consent-row">
+            <label class="check">
+              <input type="checkbox" id="consent-pdf" name="consent">
+              <span class="check-box" aria-hidden="true"></span>
+              <span class="check-label">
+                Allow an optional AI explanation.
+                <small>Only derived findings and document summaries are sent to the AI provider — never the uploaded PDF itself. The risk score is computed before AI runs.</small>
+              </span>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" data-submit>
+              <span class="btn-label">Analyse offer letter</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+            <span class="form-hint">SHA-256 fingerprint · duplicate &amp; similarity checks included.</span>
+          </div>
+          <div class="form-error" id="error-pdf" role="alert" hidden></div>
+        </form>
+      </div>
+
+      <div class="tab-panel" id="panel-url" role="tabpanel" aria-labelledby="tab-url" hidden>
+        <form id="form-url" class="scan-form" novalidate>
+          <div class="form-head">
+            <div>
+              <h2>Check a recruitment website</h2>
+              <p>We check registration age, DNS, TLS, redirects, URL patterns and similarity to known company domains. Private and internal addresses are blocked.</p>
+            </div>
+          </div>
+          <label class="field-label" for="scan-url">Website URL</label>
+          <div class="url-row">
+            <input type="url" id="scan-url" name="url" class="input" placeholder="https://careers.example.com/apply" autocomplete="off" spellcheck="false" required>
+            <button class="btn btn-primary" type="submit" data-submit>
+              <span class="btn-label">Check website</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+          <p class="form-hint">Only http and https are allowed. localhost, private IPs and metadata endpoints are refused. We never execute page scripts or download files.</p>
+          <div class="consent-row">
+            <label class="check">
+              <input type="checkbox" id="consent-url" name="consent">
+              <span class="check-box" aria-hidden="true"></span>
+              <span class="check-label">
+                Allow an optional AI explanation.
+                <small>Derived findings and domain summaries may be sent to the configured AI provider.</small>
+              </span>
+            </label>
+          </div>
+          <div class="form-error" id="error-url" role="alert" hidden></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="analysis-panel" id="analysis-panel" hidden aria-live="polite">
+      <div class="analysis-head">
+        <div>
+          <p class="eyebrow">Investigation in progress</p>
+          <h2 id="analysis-title">Running checks…</h2>
+        </div>
+        <span class="badge badge-outline" id="analysis-kind">scan</span>
+      </div>
+      <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-track">
+        <span class="progress-fill" id="progress-fill"></span>
+      </div>
+      <div class="progress-meta">
+        <span id="progress-label">Preparing analysis…</span>
+        <span id="progress-count">0 / 0</span>
+      </div>
+      <ol class="step-list" id="step-list"></ol>
+      <div class="analysis-done" id="analysis-done" hidden>
+        <div class="done-mark" aria-hidden="true">✓</div>
+        <div>
+          <strong>Report ready</strong>
+          <p>Opening your evidence report…</p>
+        </div>
+      </div>
+      <div class="form-error" id="analysis-error" role="alert" hidden></div>
+      <div class="analysis-actions" id="analysis-actions" hidden>
+        <button class="btn btn-ghost" type="button" id="reset-analysis">Start another scan</button>
+      </div>
+    </div>
+
+    <div class="privacy-note">
+      <strong>Before you scan:</strong> OfferShield is a screening tool, not a background-check service.
+      It can miss scams. Never pay a fee to obtain a job, and never share OTPs or bank passwords.
+      <a href="{{ url_for('main.about') }}#privacy">Read the privacy notes</a>.
+    </div>
+  </div>
+</section>
+{% endblock %}

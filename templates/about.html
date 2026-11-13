@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Security, methodology &amp; limitations — OfferShield{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <p class="eyebrow">Security &amp; limitations</p>
+    <h1>What OfferShield can — and cannot — verify.</h1>
+    <p class="section-lede">A cybersecurity tool should be honest about its own limits. This page explains the methodology, the evidence model, how uploaded documents are handled, and what remains unknown.</p>
+  </div>
+</section>
+
+<section class="section section-tight" id="methodology">
+  <div class="container about-grid">
+    <article class="about-main">
+      <h2>Methodology</h2>
+      <p>Every scan combines independent, mostly deterministic checks. The AI layer is optional and advisory. It cannot create findings, change points or override the score.</p>
+
+      <div class="method-list">
+        <div class="method-item">
+          <span class="method-num">01</span>
+          <div>
+            <h3>Rule-based text and payment analysis</h3>
+            <p>Pattern rules look for candidate-facing fees, training-kit charges, deposits, placement-confirmation payments, guaranteed placement, no-interview offers, urgency, sensitive-document requests, personal UPI or bank transfers, gift cards and crypto. Salary and stipend mentions are explicitly not treated as payment demands.</p>
+          </div>
+        </div>
+        <div class="method-item">
+          <span class="method-num">02</span>
+          <div>
+            <h3>Document analysis</h3>
+            <p>PDFs are parsed with PyMuPDF. We extract text, metadata, page count, embedded files and active-content markers. A SHA-256 file fingerprint detects exact duplicates. Hashed word shingles and RapidFuzz estimate similarity against previously indexed documents. Scanned PDFs use OCR only when Tesseract is installed; otherwise we report that the document could not be read.</p>
+          </div>
+        </div>
+        <div class="method-item">
+          <span class="method-num">03</span>
+          <div>
+            <h3>Domain and website intelligence</h3>
+            <p>We check RDAP/WHOIS registration age, DNS records, TLS certificate validity, redirects and URL patterns. We compare the registrable domain with a built-in list of known company domains using homoglyph normalisation and RapidFuzz similarity. Domain age and HTTPS are single signals, never verdicts.</p>
+          </div>
+        </div>
+        <div class="method-item">
+          <span class="method-num">04</span>
+          <div>
+            <h3>Company verification</h3>
+            <p>We compare the claimed brand with recruiter email domains, flag free consumer email domains and brand mismatches, and verify email/site domain consistency where possible. We never mark a recruiter as verified just because a company exists. MCA (India) master-data confirmation requires a manual CAPTCHA-based search and is reported as unverified.</p>
+          </div>
+        </div>
+        <div class="method-item">
+          <span class="method-num">05</span>
+          <div>
+            <h3>Deterministic scoring</h3>
+            <p>Points are assigned only to detected indicators and capped per category. Duplicate indicator IDs are counted once. The AI does not influence the score. Missing information never automatically becomes evidence of fraud.</p>
+          </div>
+        </div>
+      </div>
+
+      <h2 id="scoring">Scoring model</h2>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Category</th><th>Maximum points</th><th>Typical evidence</th></tr></thead>
+          <tbody>
+            <tr><td>Payment fraud indicators</td><td>25</td><td>Registration/training/deposit requests, personal UPI, bank transfer, gift cards</td></tr>
+            <tr><td>Domain &amp; website intelligence</td><td>20</td><td>New domain, lookalike brand, punycode, TLS failure, shortener</td></tr>
+            <tr><td>Company verification</td><td>20</td><td>Brand/email mismatch, free email, email/site mismatch</td></tr>
+            <tr><td>Offer letter analysis</td><td>15</td><td>Exact duplicate, high similarity, active content, metadata anomaly</td></tr>
+            <tr><td>OSINT &amp; reputation</td><td>10</td><td>Optional VirusTotal / Google Safe Browsing verdicts</td></tr>
+            <tr><td>Recruitment message patterns</td><td>10</td><td>Guaranteed placement, no interview, urgency, unrealistic pay</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="about-callout"><strong>Interpretation:</strong> 0–24 low detected risk, 25–49 moderate warning signs, 50–74 high risk, 75–100 critical risk. An additional <em>Insufficient evidence</em> status is used when the score is low but too many verification checks could not be completed. A score is a count of detected indicators, not a probability of fraud.</p>
+
+      <h2 id="privacy">Document and data handling</h2>
+      <div class="info-cards">
+        <div class="info-card">
+          <h3>Uploaded PDFs</h3>
+          <p>Processed in memory. The file is not written to disk, not executed and not retained permanently. Only extracted findings, short evidence snippets and a file hash are kept.</p>
+        </div>
+        <div class="info-card">
+          <h3>Reports</h3>
+          <p>The investigation result is stored temporarily (default 24 hours) so you can view and download the PDF report. Expired cases are deleted automatically.</p>
+        </div>
+        <div class="info-card">
+          <h3>Similarity index</h3>
+          <p>Only SHA-256 hashes of normalised word 5-grams are stored, never the offer-letter text. The index is pruned according to the configured retention period.</p>
+        </div>
+        <div class="info-card">
+          <h3>Optional AI</h3>
+          <p>Disabled unless an API key is configured <em>and</em> you tick the consent box. Uploaded PDFs are never sent to the AI provider. Only derived findings and summaries are sent. For pasted messages, a redacted excerpt may be included.</p>
+        </div>
+      </div>
+
+      <h2 id="security">Security controls</h2>
+      <ul class="security-list">
+        <li>File signature, extension and size validation; safe filename handling; no execution of uploads.</li>
+        <li>SSRF protection: only http/https, blocked credentials-in-URL, blocked private/loopback/link-local/reserved addresses, restricted ports, re-validation on every redirect, connection timeouts.</li>
+        <li>No automatic download of page bodies; only status and headers are inspected.</li>
+        <li>Output escaping, strict Content-Security-Policy, anti-framing, nosniff and referrer-policy headers.</li>
+        <li>Cross-origin analysis submissions rejected; no API secrets in source code; environment-driven configuration.</li>
+        <li>Safe error handling that does not expose stack traces or user content.</li>
+      </ul>
+
+      <h2 id="limitations">Known limitations</h2>
+      <ul class="limit-list">
+        <li><strong>No registry verification:</strong> MCA and similar registries require manual, CAPTCHA-protected searches. We show “Unverified”, not a fabricated result.</li>
+        <li><strong>No vacancy confirmation:</strong> We cannot confirm that a real vacancy exists or that a sender is an authorised employee.</li>
+        <li><strong>Brand list is finite:</strong> The built-in reference list cannot cover every company. Absence of a similarity match is not a positive signal.</li>
+        <li><strong>Reputation lag:</strong> New scam domains often have no reputation history. A clean reputation result is not proof of legitimacy.</li>
+        <li><strong>Domain age and HTTPS are weak signals:</strong> Legitimate new businesses exist; phishing sites routinely use valid certificates.</li>
+        <li><strong>DNS rebinding residual risk:</strong> We re-validate DNS before requests and disable automatic redirects, but no in-process SSRF guard is perfect.</li>
+        <li><strong>OCR depends on Tesseract:</strong> If the binary is missing, scanned documents are explicitly reported as not analysed.</li>
+        <li><strong>AI can be wrong:</strong> The explanation is advisory, may contain errors, and is never used for scoring.</li>
+        <li><strong>No rate limiting by default:</strong> Put OfferShield behind a reverse proxy with request limits for public deployments.</li>
+      </ul>
+
+      <h2>Optional integrations</h2>
+      <p>All are configured through environment variables and are disabled by default. See <span class="mono">.env.example</span> and the README.</p>
+      <ul class="limit-list">
+        <li><strong>AI explanation:</strong> any OpenAI-compatible chat-completions endpoint (<span class="mono">AI_API_KEY</span>, <span class="mono">AI_BASE_URL</span>, <span class="mono">AI_MODEL</span>).</li>
+        <li><strong>VirusTotal</strong> URL reputation (<span class="mono">VIRUSTOTAL_API_KEY</span>).</li>
+        <li><strong>Google Safe Browsing</strong> (<span class="mono">SAFE_BROWSING_API_KEY</span>).</li>
+        <li><strong>RDAP</strong> endpoint override (<span class="mono">RDAP_URL_TEMPLATE</span>).</li>
+      </ul>
+    </article>
+
+    <aside class="about-side">
+      <div class="card side-card">
+        <h3>Report immediately if you paid</h3>
+        <p>In India, report cyber financial fraud at <a href="https://cybercrime.gov.in" rel="noopener noreferrer" target="_blank">cybercrime.gov.in</a> or call <strong>1930</strong>. Contact your bank to freeze or dispute the transaction.</p>
+      </div>
+      <div class="card side-card">
+        <h3>Safe verification habits</h3>
+        <ul class="mini-list">
+          <li>Type the company domain manually; do not trust links.</li>
+          <li>Use the official careers portal or published switchboard.</li>
+          <li>Never pay for registration, training, equipment or a deposit.</li>
+          <li>Never share OTPs, CVV, passwords or full ID documents.</li>
+          <li>Ask for the offer on company letterhead plus an official email from the corporate domain.</li>
+        </ul>
+      </div>
+      <div class="card side-card">
+        <h3>Not a fraud determination</h3>
+        <p>OfferShield reports indicators and missing evidence. It does not accuse a named individual or company of a crime. Always use independent judgment and official channels.</p>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% set score = case.get('score', {}) %}
+{% set cls = score.get('classification', {}) %}
+{% set risk_key = cls.get('key', 'low') %}
+{% set findings = case.get('findings', []) %}
+{% set checks = case.get('checks', []) %}
+{% set entities = case.get('entities', {}) %}
+{% set company = case.get('company', {}) %}
+{% set domain = case.get('domain', {}) %}
+{% set document = case.get('document', {}) %}
+{% set ai = case.get('ai', {}) %}
+{% set warn_findings = findings | selectattr('severity', 'in', ['critical', 'high', 'medium', 'low']) | list %}
+{% set positive_findings = findings | selectattr('severity', 'in', ['clean', 'info']) | list %}
+{% set unknown_findings = findings | selectattr('severity', 'equalto', 'unknown') | list %}
+{% set completed_checks = checks | selectattr('status', 'in', ['pass', 'warn', 'fail']) | list %}
+{% set incomplete_checks = checks | selectattr('status', 'equalto', 'unknown') | list %}
+{% set status_text = {'pass': 'No issue detected', 'warn': 'Suspicious', 'fail': 'Issue detected', 'unknown': 'Unknown'} %}
+{% set payment_count = warn_findings | selectattr('category', 'equalto', 'payment') | list | length %}
+{% set registration = domain.get('registration', {}) %}
+{% set circumference = 339.29 %}
+
+{% block title %}Investigation report — OfferShield{% endblock %}
+
+{% block content %}
+<section class="results-head">
+  <div class="container">
+    <div class="results-top">
+      <div>
+        <a class="text-link back-link" href="{{ url_for('main.dashboard') }}">← New investigation</a>
+        <div class="report-meta">
+          <span class="badge badge-outline">{{ case.get('kind', '').upper() }} scan</span>
+          <span class="mono">#{{ case.get('id', '')[:8] }}</span>
+          <span class="mono">{{ case.get('created_at', '') }}</span>
+        </div>
+      </div>
+      <div class="results-actions">
+        <button class="btn btn-ghost btn-sm" type="button" data-copy-link="{{ request.url }}">Copy report link</button>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('main.download_report', case_id=case.get('id')) }}">Download PDF report</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-tight">
+  <div class="container">
+    <div class="risk-hero risk-{{ risk_key }}">
+      <div class="dial-wrap">
+        <svg class="risk-dial" viewBox="0 0 120 120" role="img" aria-label="Risk score {{ score.get('score', 0) }} out of 100">
+          <circle class="dial-track" cx="60" cy="60" r="54"></circle>
+          <circle class="dial-progress" cx="60" cy="60" r="54"
+                  stroke-dasharray="{{ circumference }}"
+                  stroke-dashoffset="{{ circumference - (circumference * (score.get('score', 0) / 100)) }}"
+                  transform="rotate(-90 60 60)"></circle>
+          <text x="60" y="60" text-anchor="middle" class="dial-score">{{ score.get('score', 0) }}</text>
+          <text x="60" y="78" text-anchor="middle" class="dial-sub">out of 100</text>
+        </svg>
+      </div>
+      <div class="risk-copy">
+        <p class="eyebrow">Investigation result</p>
+        <h1>{{ score.get('headline', 'Low detected risk') }}</h1>
+        <div class="risk-badges">
+          <span class="badge badge-{{ risk_key }}">{{ cls.get('label', '') }}</span>
+          <span class="badge badge-evidence-{{ score.get('evidence_status', 'partial') }}">{{ score.get('evidence_label', '') }}</span>
+          <span class="badge badge-outline">{{ score.get('completed_checks', 0) }} / {{ score.get('total_checks', 0) }} verification checks completed</span>
+        </div>
+        <p class="risk-detail">{{ score.get('evidence_detail', '') }}</p>
+        <p class="risk-disclaimer">{{ score.get('disclaimer', '') }}</p>
+      </div>
+      <div class="risk-facts">
+        <div class="fact">
+          <span>Payment indicators</span>
+          <strong class="{{ 'text-warn' if payment_count else 'text-clean' }}">{{ payment_count }}</strong>
+        </div>
+        <div class="fact">
+          <span>Company</span>
+          <strong>{{ company.get('status_label', 'Not supplied') }}</strong>
+        </div>
+        <div class="fact">
+          <span>Domain age</span>
+          <strong>{% if registration.get('available') %}{{ registration.get('age_days') }} days{% else %}Unknown{% endif %}</strong>
+        </div>
+        <div class="fact">
+          <span>Document</span>
+          <strong>{% if document %}{{ document.get('text_extraction', {}).get('status', 'analysed') }}{% else %}Not supplied{% endif %}</strong>
+        </div>
+      </div>
+    </div>
+
+    {% if score.get('evidence_status') == 'insufficient' %}
+    <div class="notice notice-warn">
+      <strong>Insufficient evidence.</strong> The detected risk is low, but important verification checks could not be completed. Do not treat this as a clean result. Review the missing checks below and verify the offer through official channels.
+    </div>
+    {% endif %}
+
+    <div class="results-grid">
+      <div class="results-main">
+        <section class="report-section">
+          <div class="section-head-row">
+            <h2>Score contributions</h2>
+            <span class="muted">Capped per category · AI is not involved</span>
+          </div>
+          <div class="category-list">
+            {% for item in score.get('breakdown', []) %}
+            <div class="category-row">
+              <div class="category-label">
+                <span>{{ item.get('label') }}</span>
+                <span class="mono">{{ item.get('points', 0) }} / {{ item.get('cap', 0) }}</span>
+              </div>
+              <div class="meter" role="presentation">
+                <span class="meter-fill {{ 'is-warn' if item.get('points', 0) > 0 else '' }}" data-width="{{ ((item.get('points', 0) / item.get('cap', 1)) * 100) | round(1) }}"></span>
+              </div>
+              <p class="category-note">{{ item.get('indicator_count', 0) }} indicator(s). {{ item.get('note', '') }}</p>
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="report-section" id="findings">
+          <div class="section-head-row">
+            <h2>Findings &amp; evidence</h2>
+            <span class="muted">{{ warn_findings | length }} warning · {{ positive_findings | length }} positive · {{ unknown_findings | length }} unknown</span>
+          </div>
+          <div class="filter-bar" role="group" aria-label="Filter findings">
+            <button class="chip is-active" type="button" data-filter="all">All <span>{{ findings | length }}</span></button>
+            <button class="chip" type="button" data-filter="warn">Warnings <span>{{ warn_findings | length }}</span></button>
+            <button class="chip" type="button" data-filter="positive">Positive <span>{{ positive_findings | length }}</span></button>
+            <button class="chip" type="button" data-filter="unknown">Unknown <span>{{ unknown_findings | length }}</span></button>
+          </div>
+
+          <div class="finding-list" id="finding-list">
+            {% for f in findings %}
+            {% set group = 'warn' if f.get('severity') in ['critical', 'high', 'medium', 'low'] else ('positive' if f.get('severity') in ['clean', 'info'] else 'unknown') %}
+            <article class="finding-card severity-{{ f.get('severity') }}" data-group="{{ group }}">
+              <header class="finding-head">
+                <span class="severity-badge sev-{{ f.get('severity') }}">{{ f.get('severity', 'info') }}</span>
+                <h3>{{ f.get('title', '') }}</h3>
+                {% if f.get('points', 0) > 0 %}<span class="points-pill">+{{ f.get('points') }} pts</span>{% endif %}
+              </header>
+              {% if f.get('evidence') %}
+              <div class="evidence">
+                <span class="evidence-label">Evidence</span>
+                <p>{{ f.get('evidence') }}</p>
+              </div>
+              {% endif %}
+              <p class="finding-why">{{ f.get('why', '') }}</p>
+              <footer class="finding-foot">
+                <span class="mono">{{ f.get('source', '') }}</span>
+                {% if f.get('verified') %}<span class="badge badge-clean">verified data point</span>{% endif %}
+              </footer>
+            </article>
+            {% else %}
+            <p class="empty-state">No findings were produced.</p>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="report-section">
+          <div class="section-head-row">
+            <h2>Recommended next actions</h2>
+          </div>
+          <ol class="rec-list">
+            {% for rec in score.get('recommendations', []) %}
+            <li class="rec-item">
+              <span class="badge badge-priority-{{ rec.get('priority', 'low') }}">{{ rec.get('priority', '') }}</span>
+              <div>
+                <h3>{{ rec.get('title', '') }}</h3>
+                <p>{{ rec.get('detail', '') }}</p>
+              </div>
+            </li>
+            {% endfor %}
+          </ol>
+        </section>
+
+        <section class="report-section">
+          <div class="section-head-row">
+            <h2>Extracted information</h2>
+            <span class="muted">Reported as found — not independently verified</span>
+          </div>
+          <div class="entity-grid">
+            <div class="entity-card">
+              <span class="entity-label">Companies claimed</span>
+              <p>{% if entities.get('companies') %}{{ entities.get('companies') | map(attribute='name') | join(', ') }}{% else %}<span class="muted">None extracted</span>{% endif %}</p>
+            </div>
+            <div class="entity-card">
+              <span class="entity-label">Recruiter names</span>
+              <p>{% if entities.get('recruiters') %}{{ entities.get('recruiters') | join(', ') }}{% else %}<span class="muted">None extracted</span>{% endif %}</p>
+            </div>
+            <div class="entity-card">
+              <span class="entity-label">Email addresses</span>
+              <p class="break">{% if entities.get('emails') %}{{ entities.get('emails') | join(', ') }}{% else %}<span class="muted">None extracted</span>{% endif %}</p>
+            </div>
+            <div class="entity-card">
+              <span class="entity-label">Phone numbers</span>
+              <p>{% if entities.get('phones') %}{{ entities.get('phones') | join(', ') }}{% else %}<span class="muted">None extracted</span>{% endif %}</p>
+            </div>
+            <div class="entity-card">
+              <span class="entity-label">UPI IDs</span>
+              <p class="break">{% if entities.get('upi_ids') %}{{ entities.get('upi_ids') | join(', ') }}{% else %}<span class="muted">None extracted</span>{% endif %}</p>
+            </div>
+            <div class="entity-card">
+              <span class="entity-label">URLs</span>
+              <p class="break">{% if entities.get('urls') %}{{ entities.get('urls') | join(', ') }}{% else %}<span class="muted">None extracted</span>{% endif %}</p>
+            </div>
+            <div class="entity-card entity-wide">
+              <span class="entity-label">Monetary mentions</span>
+              <p>{% if entities.get('amounts') %}{{ entities.get('amounts') | map(attribute='raw') | join(' · ') }}{% else %}<span class="muted">None extracted</span>{% endif %}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="report-section">
+          <div class="section-head-row">
+            <h2>Checks completed &amp; unavailable</h2>
+            <span class="muted">Green = no issue detected by that specific check</span>
+          </div>
+          <div class="check-columns">
+            <div>
+              <h3 class="subhead">Completed · {{ completed_checks | length }}</h3>
+              <div class="check-list-box">
+                {% for c in completed_checks %}
+                <div class="check-row">
+                  <span class="status-pill status-{{ c.get('status') }}">{{ status_text.get(c.get('status'), 'Unknown') }}</span>
+                  <div>
+                    <strong>{{ c.get('label', '') }}</strong>
+                    <small>{{ c.get('detail', '') }}</small>
+                  </div>
+                </div>
+                {% else %}
+                <p class="muted">No checks completed.</p>
+                {% endfor %}
+              </div>
+            </div>
+            <div>
+              <h3 class="subhead">Not completed · {{ incomplete_checks | length }}</h3>
+              <div class="check-list-box">
+                {% for c in incomplete_checks %}
+                <div class="check-row">
+                  <span class="status-pill status-unknown">Unknown</span>
+                  <div>
+                    <strong>{{ c.get('label', '') }}</strong>
+                    <small>{{ c.get('detail', '') }}</small>
+                  </div>
+                </div>
+                {% else %}
+                <p class="muted">Every check in this scan produced a result.</p>
+                {% endfor %}
+              </div>
+              <p class="check-footnote">Unknown means unavailable or not applicable — not evidence of fraud.</p>
+            </div>
+          </div>
+        </section>
+
+        {% if case.get('limitations') %}
+        <section class="report-section">
+          <div class="section-head-row"><h2>Limitations</h2></div>
+          <ul class="limit-list">
+            {% for item in case.get('limitations', []) %}<li>{{ item }}</li>{% endfor %}
+          </ul>
+        </section>
+        {% endif %}
+      </div>
+
+      <aside class="results-side">
+        <div class="card side-card ai-card">
+          <div class="side-card-head">
+            <h2>AI explanation</h2>
+            <span class="badge badge-outline">Advisory</span>
+          </div>
+          {% if ai.get('status') == 'ok' %}
+          <div class="ai-output">{{ ai.get('text', '') }}</div>
+          <p class="ai-meta">Provider: {{ ai.get('provider', 'configured') }} · model: {{ ai.get('model', '') }}. This explanation does not affect the risk score or the evidence.</p>
+          {% else %}
+          <p class="ai-empty">{{ ai.get('message', 'AI explanation unavailable.') }}</p>
+          <p class="ai-meta">The deterministic rule engine produced all findings and the score without AI.</p>
+          {% endif %}
+        </div>
+
+        <div class="card side-card">
+          <h2>Company verification</h2>
+          <dl class="kv-list">
+            <div><dt>Status</dt><dd>{{ company.get('status_label', 'Unverified') }}</dd></div>
+            <div><dt>Scope</dt><dd>{{ company.get('scope', 'No independent verification was completed.') }}</dd></div>
+            <div><dt>Claimed brand</dt><dd>{{ company.get('claimed_brand') or 'None recognised' }}</dd></div>
+            <div><dt>Official domains</dt><dd>{{ company.get('official_domains', []) | join(', ') or 'None' }}</dd></div>
+            <div><dt>Recruiter email domains</dt><dd>{{ company.get('email_domains', []) | join(', ') or 'None extracted' }}</dd></div>
+          </dl>
+          <p class="side-note">MCA registry checks require a manual CAPTCHA search. <a href="https://www.mca.gov.in/content/mca/global/en/mca/master-data/MDS.html" rel="noopener noreferrer" target="_blank">Open MCA portal</a>.</p>
+        </div>
+
+        {% if domain %}
+        <div class="card side-card">
+          <h2>Domain intelligence</h2>
+          <dl class="kv-list">
+            <div><dt>Host</dt><dd class="break">{{ domain.get('host', '') }}</dd></div>
+            <div><dt>Registration</dt><dd>{% if registration.get('available') %}{{ registration.get('registration_date') }} ({{ registration.get('age_days') }} days){% else %}{{ registration.get('note', 'Unavailable') }}{% endif %}</dd></div>
+            <div><dt>Registrar</dt><dd>{{ registration.get('registrar', 'Unknown') }}</dd></div>
+            <div><dt>TLS</dt><dd>{% if domain.get('ssl', {}).get('available') %}{{ 'Valid' if domain.get('ssl', {}).get('verified') else 'Invalid' }} · expires {{ domain.get('ssl', {}).get('not_after', 'unknown') }}{% else %}{{ domain.get('ssl', {}).get('error', 'Unavailable') }}{% endif %}</dd></div>
+            <div><dt>HTTP</dt><dd>{% if domain.get('http', {}).get('reachable') %}Reachable · HTTP {{ domain.get('http', {}).get('status_code') }}{% else %}{{ domain.get('http', {}).get('error', 'Unreachable') }}{% endif %}</dd></div>
+            <div><dt>Brand similarity</dt><dd>{% if domain.get('brand_matches') %}{{ domain.get('brand_matches')[0].get('brand') }} — {{ domain.get('brand_matches')[0].get('match') }}{% else %}No match in built-in list{% endif %}</dd></div>
+          </dl>
+          <p class="side-note">Domain age and HTTPS are weak signals and never determine fraud on their own.</p>
+        </div>
+        {% endif %}
+
+        {% if document %}
+        <div class="card side-card">
+          <h2>Document analysis</h2>
+          <dl class="kv-list">
+            <div><dt>File</dt><dd class="break">{{ document.get('filename', '') }}</dd></div>
+            <div><dt>Pages</dt><dd>{{ document.get('page_count', 0) }}</dd></div>
+            <div><dt>Extraction</dt><dd>{{ document.get('text_extraction', {}).get('status', 'unknown') }} — {{ document.get('text_extraction', {}).get('message', '') }}</dd></div>
+            <div><dt>OCR</dt><dd>{{ document.get('ocr', {}).get('message', 'Not required') }}</dd></div>
+            <div><dt>Exact duplicate</dt><dd>{{ 'Yes' if document.get('duplicate') else 'No' }}</dd></div>
+            <div><dt>Active content</dt><dd>{{ 'Detected' if document.get('active_content') else 'Not detected' }}</dd></div>
+            <div><dt>SHA-256</dt><dd class="mono break">{{ document.get('fingerprint', '') }}</dd></div>
+          </dl>
+          {% if document.get('similar_documents') %}
+          <p class="side-note">Closest indexed document: {{ (document.get('similar_documents')[0].get('score', 0) * 100) | round(1) }}% similarity.</p>
+          {% endif %}
+          <p class="side-note">Duplicate or similar templates are supporting evidence, not proof of forgery.</p>
+        </div>
+        {% endif %}
+
+        <div class="card side-card side-danger">
+          <h2>If money was paid</h2>
+          <p>Report financial cyber fraud at <a href="https://cybercrime.gov.in" rel="noopener noreferrer" target="_blank">cybercrime.gov.in</a> or call <strong>1930</strong>. Contact your bank immediately to dispute or freeze the transfer.</p>
+        </div>
+      </aside>
+    </div>
+
+    <div class="report-footer-actions">
+      <a class="btn btn-primary" href="{{ url_for('main.download_report', case_id=case.get('id')) }}">Download PDF report</a>
+      <a class="btn btn-ghost" href="{{ url_for('main.dashboard') }}">Run another scan</a>
+      <span class="muted">Report ID {{ case.get('id') }} · retained temporarily, then deleted automatically.</span>
+    </div>
+  </div>
+</section>
+{% endblock %}

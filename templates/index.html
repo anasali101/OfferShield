@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}OfferShield — Know Before You Trust.{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy reveal">
+      <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Evidence-first recruitment fraud screening</p>
+      <h1>Know before<br>you <span class="accent-text">trust.</span></h1>
+      <p class="hero-lede">
+        Fake offers, paid “training kits”, deposit scams and lookalike recruitment sites
+        cost job seekers money and personal data. OfferShield investigates the offer with
+        rules, document analysis and domain intelligence — then shows you the evidence.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="{{ url_for('main.dashboard') }}">Start an investigation</a>
+        <a class="btn btn-ghost" href="{{ url_for('main.about') }}">Read the methodology</a>
+      </div>
+      <ul class="hero-points">
+        <li>Deterministic risk score — AI never decides</li>
+        <li>Uploaded PDFs processed in memory</li>
+        <li>Works without any paid API</li>
+      </ul>
+    </div>
+
+    <div class="hero-panel reveal delay-1" aria-label="How OfferShield scores evidence">
+      <div class="panel-head">
+        <span class="panel-kicker">Investigation pipeline</span>
+        <span class="badge badge-outline">Illustrative</span>
+      </div>
+      <div class="pipeline">
+        <div class="pipeline-row">
+          <span class="step-icon step-pass" aria-hidden="true">✓</span>
+          <div><strong>Message patterns</strong><span>Fee requests, guarantees, urgency</span></div>
+          <span class="points">10 pts</span>
+        </div>
+        <div class="pipeline-row">
+          <span class="step-icon step-warn" aria-hidden="true">!</span>
+          <div><strong>Payment indicators</strong><span>Registration, kit, deposit, UPI</span></div>
+          <span class="points">25 pts</span>
+        </div>
+        <div class="pipeline-row">
+          <span class="step-icon step-unknown" aria-hidden="true">?</span>
+          <div><strong>Domain intelligence</strong><span>Age, DNS, TLS, lookalikes</span></div>
+          <span class="points">20 pts</span>
+        </div>
+        <div class="pipeline-row">
+          <span class="step-icon step-unknown" aria-hidden="true">?</span>
+          <div><strong>Company verification</strong><span>Email domain, brand claims</span></div>
+          <span class="points">20 pts</span>
+        </div>
+        <div class="pipeline-row">
+          <span class="step-icon step-pass" aria-hidden="true">✓</span>
+          <div><strong>Offer letter analysis</strong><span>Extraction, duplicates, clauses</span></div>
+          <span class="points">15 pts</span>
+        </div>
+        <div class="pipeline-row">
+          <span class="step-icon step-unknown" aria-hidden="true">?</span>
+          <div><strong>OSINT / reputation</strong><span>Optional providers</span></div>
+          <span class="points">10 pts</span>
+        </div>
+      </div>
+      <div class="panel-foot">
+        <span>Missing checks are shown as <span class="dot dot-grey"></span> Unknown — never as fraud.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="container trust-strip reveal delay-2">
+    <div><strong>Rules first</strong><span>Transparent, capped scoring with evidence for every point</span></div>
+    <div><strong>SSRF-protected</strong><span>Private networks blocked; redirects re-validated</span></div>
+    <div><strong>Privacy default</strong><span>No permanent document storage; short report retention</span></div>
+    <div><strong>AI optional</strong><span>Explanations only, never the risk score</span></div>
+  </div>
+</section>
+
+<section class="section" id="how-it-works">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">How it works</p>
+      <h2>Three ways in. One evidence-backed report.</h2>
+      <p class="section-lede">Every investigation returns the same structure: score, findings, evidence, uncompleted checks and next actions.</p>
+    </div>
+    <div class="steps-grid">
+      <article class="card step-card">
+        <span class="step-number">01</span>
+        <h3>Submit what you received</h3>
+        <p>Paste a WhatsApp, Telegram or email message. Upload a PDF offer letter. Or submit a recruitment website URL.</p>
+      </article>
+      <article class="card step-card">
+        <span class="step-number">02</span>
+        <h3>We investigate, separately</h3>
+        <p>Payment requests, recruitment language, document consistency, DNS, TLS, registration age and brand similarity are checked by different modules.</p>
+      </article>
+      <article class="card step-card">
+        <span class="step-number">03</span>
+        <h3>Review the evidence</h3>
+        <p>See what was actually found, what could not be verified, and what to do next. Download a PDF report for your records.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section-tight">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Core capabilities</p>
+      <h2>Built to investigate, not to guess.</h2>
+    </div>
+    <div class="feature-grid">
+      <article class="card feature-card">
+        <span class="feature-icon">01</span>
+        <h3>Job message scanner</h3>
+        <p>Registration fees, training charges, deposits, guaranteed placement, no-interview offers and urgency pressure — each with the surrounding context.</p>
+        <span class="feature-tag">Text analysis</span>
+      </article>
+      <article class="card feature-card">
+        <span class="feature-icon">02</span>
+        <h3>PDF offer letter analyser</h3>
+        <p>PyMuPDF extraction, SHA-256 fingerprinting, duplicate detection and similarity against previously seen documents. OCR is attempted for scans; if unavailable, we say so.</p>
+        <span class="feature-tag">Document analysis</span>
+      </article>
+      <article class="card feature-card">
+        <span class="feature-icon">03</span>
+        <h3>Domain &amp; website intelligence</h3>
+        <p>RDAP registration data, DNS records, TLS certificate details, redirect checks and lookalike-brand similarity. Domain age is one signal, never a verdict.</p>
+        <span class="feature-tag">Network checks</span>
+      </article>
+      <article class="card feature-card">
+        <span class="feature-icon">04</span>
+        <h3>Payment fraud detector</h3>
+        <p>Separates candidate-facing fees from salaries and stipends. Detects UPI, bank transfer, gift-card and crypto payment instructions with severity.</p>
+        <span class="feature-tag">Context aware</span>
+      </article>
+      <article class="card feature-card">
+        <span class="feature-icon">05</span>
+        <h3>Company verification</h3>
+        <p>Compares claimed brands with recruiter email domains, flags free-email recruiters and brand mismatches. MCA registry search is disclosed as manual.</p>
+        <span class="feature-tag">Verified vs unverified</span>
+      </article>
+      <article class="card feature-card">
+        <span class="feature-icon">06</span>
+        <h3>Optional AI explanation</h3>
+        <p>If configured, an LLM explains the findings and recommends next steps. It receives findings — not the PDF — and cannot change the deterministic score.</p>
+        <span class="feature-tag">Advisory only</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section-tight">
+  <div class="container split-panel">
+    <div class="split-copy">
+      <p class="eyebrow">Example pattern</p>
+      <h2>“Pay ₹2,000 for the training kit to confirm your placement.”</h2>
+      <p>This single sentence contains several independent indicators: a candidate-facing payment, a guaranteed outcome, and a payment tied to placement confirmation. OfferShield scores each one separately, caps the payment category at 25 points, and explains the evidence.</p>
+      <ul class="check-list">
+        <li><span class="dot dot-red"></span> Payment request detected — critical indicator</li>
+        <li><span class="dot dot-orange"></span> Guaranteed placement — high-risk recruitment pattern</li>
+        <li><span class="dot dot-grey"></span> Company identity — unverified unless independently traceable</li>
+      </ul>
+      <a class="text-link" href="{{ url_for('main.dashboard') }}">Run this example in the dashboard →</a>
+    </div>
+    <div class="quote-card">
+      <div class="quote-meta">
+        <span class="badge badge-warn">Suspicious message</span>
+        <span class="mono">whatsapp / sms</span>
+      </div>
+      <blockquote>
+        “Congratulations! You have been selected for a software developer position at a
+        top MNC. Pay ₹2,000 for a mandatory training kit within 24 hours to confirm your
+        placement. Guaranteed placement, no interview required.”
+      </blockquote>
+      <div class="quote-foot">
+        <span class="dot dot-red"></span> Fee + guarantee + urgency. Never pay to get a job.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section cta-section">
+  <div class="container">
+    <div class="cta-card">
+      <div>
+        <p class="eyebrow">Ready when you are</p>
+        <h2>Check the offer before you pay, share documents or sign.</h2>
+        <p>No account. No permanent document retention. Optional AI explanations are off unless you consent.</p>
+      </div>
+      <div class="cta-actions">
+        <a class="btn btn-primary" href="{{ url_for('main.dashboard') }}">Start a scan</a>
+        <a class="btn btn-ghost" href="{{ url_for('main.about') }}#privacy">How data is handled</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

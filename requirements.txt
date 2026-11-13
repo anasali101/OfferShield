@@ -1,0 +1,18 @@
+# OfferShield - core runtime dependencies
+Flask>=3.0,<4.0
+PyMuPDF>=1.24
+dnspython>=2.6
+rapidfuzz>=3.6
+requests>=2.31
+reportlab>=4.1
+python-dotenv>=1.0
+python-whois>=0.9
+
+# Optional OCR support for scanned PDFs. Tesseract itself must be installed
+# separately (see README). The app degrades gracefully if this is missing.
+pytesseract>=0.3.10
+Pillow>=10.0
+
+# Test / deployment helpers
+pytest>=8.0
+waitress>=3.0
